@@ -114,12 +114,6 @@ export default class App extends React.Component {
               engine: engine,
               world: world,
             },
-            initialCircle: {
-              body: initialCircle,
-              radius: radius,
-              color: "red",
-              renderer: Circle,
-            },
             floor: {
               body: floor,
               size: [width, boxSize],
