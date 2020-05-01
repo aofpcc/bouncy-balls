@@ -41,7 +41,7 @@ export default class App extends React.Component {
                 let body = Matter.Bodies.rectangle(
                           t.event.pageX, t.event.pageY, 
                           boxSize, boxSize,
-                          { frictionAir: 0.021 });
+                          { frictionAir: 0.021, restitution: 1.0  });
                 Matter.World.add(world, [body]);
                     entities[++boxIds] = {
                         body: body,
