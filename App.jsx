@@ -23,10 +23,25 @@ export default class App extends React.Component {
       { isStatic: true }
     );
 
+    const engine = Matter.Engine.create({ enableSleeping: false });
+    const world = engine.world;
+    Matter.World.add(world, [initialBox, floor]);
+
+    const Physics = (entities, { time }) => {
+      let engine = entities["physics"].engine;
+      Matter.Engine.update(engine, time.delta);
+      return entities;
+    };
+
     return (
       <GameEngine
         style={styles.container}
+        systems={[Physics]}
         entities={{
+          physics: { 
+            engine: engine, 
+            world: world 
+          },
           initialBox: {
             body: initialBox,
             size: [boxSize, boxSize],
