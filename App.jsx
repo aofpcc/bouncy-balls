@@ -15,15 +15,8 @@ import { GameEngine } from "react-native-game-engine";
 const { width, height } = Dimensions.get("screen");
 const boxSize = Math.trunc(Math.max(width, height) * 0.075);
 const radius = Math.trunc(Math.max(width, height) * 0.075) * 0.5;
-const engine = Matter.Engine.create({ enableSleeping: false });
+const engine = Matter.Engine.create({ enableSleeping: true });
 const world = engine.world;
-// const initialBox = Matter.Bodies.rectangle(
-//   width / 2,
-//   height / 2,
-//   boxSize,
-//   boxSize
-// );
-const initialCircle = Matter.Bodies.circle(width / 2, height / 2, radius);
 const floor = Matter.Bodies.rectangle(
   width / 2,
   height - boxSize,
@@ -31,7 +24,32 @@ const floor = Matter.Bodies.rectangle(
   boxSize,
   { isStatic: true }
 );
-Matter.World.add(world, [initialCircle, floor]);
+const wallWidth = 10;
+const leftWall = Matter.Bodies.rectangle(0, height / 2, wallWidth, height, {
+  isStatic: true,
+});
+
+const rightWall = Matter.Bodies.rectangle(
+  width,
+  height / 2,
+  wallWidth,
+  height,
+  { isStatic: true }
+);
+
+const obstacleHeight = 30;
+const obstacle = Matter.Bodies.rectangle(
+  width/2,
+  0,
+  width/ 2,
+  obstacleHeight,
+  {
+    isStatic: true
+  }
+);
+Matter.Body.setVelocity(obstacle, { x: 0, y: 10 });
+
+Matter.World.add(world, [floor, leftWall, rightWall, obstacle]);
 
 const Physics = (entities, { time }) => {
   let engine = entities["physics"].engine;
@@ -42,63 +60,138 @@ const Physics = (entities, { time }) => {
 let boxIds = 0;
 
 export default class App extends React.Component {
+  state = {
+    count: 0,
+    entities: {
+      physics: {
+        engine: engine,
+        world: world,
+      },
+      floor: {
+        body: floor,
+        size: [width, boxSize],
+        color: "green",
+        renderer: Box,
+      },
+      obstacle: {
+        body: obstacle,
+        size: [width/2, obstacleHeight],
+        renderer: Box,
+      },
+      leftWall: {
+        body: leftWall,
+        size: [wallWidth, height],
+        renderer: Box,
+      },
+      rightWall: {
+        body: rightWall,
+        size: [wallWidth, height],
+        renderer: Box,
+      },
+    },
+  };
 
   constructor(props) {
     super(props);
-    this.state = {
-      count: 1,
-      entities: []
-    };
+    this.initiateBall = this.initiateBall.bind(this);
+    const mainBall = this.initiateBall();
+    this.state.entities["mainBall"] = mainBall;
   }
 
-  removeCircle = (entities, {touches, screen}) => {
+  initiateBall = () => {
+    const entities = this.state.entities;
     let world = entities["physics"].world;
-    const width = screen.width, height = screen.height;
+    let radius = Math.trunc(Math.max(width, height) * 0.075) * 0.5;
+    let body = Matter.Bodies.circle(width / 2, height - 3 * boxSize, radius, {
+      frictionAir: 0.0001,
+      restitution: 1,
+    });
+
+    Matter.World.add(world, [body]);
+
+    let newObject = {
+      body: body,
+      radius: radius,
+      color: boxIds % 2 == 0 ? "pink" : "#B8E986",
+      renderer: Circle,
+    };
+
+    entities[(++boxIds).toString()] = newObject;
+
+    return newObject;
+  };
+
+  removeCircle = (entities, { touches, screen }) => {
+    let world = entities["physics"].world;
+    const width = screen.width,
+      height = screen.height;
     let removeIds = [];
-    this.state.entities.forEach((v) => {
-      if(v.body.position.x > width || v.body.position.x < 0 ||
-        v.body.position.y > height || v.body.position.y < 0) {
+    Object.keys(entities).forEach((key) => {
+      let v = entities[key];
+      if (
+        v &&
+        v.body &&
+        (v.body.position.x > width ||
+          v.body.position.x < 0 ||
+          v.body.position.y > height ||
+          v.body.position.y < 0)
+      ) {
         removeIds.push(v.body.id);
       }
-    })
-    let removedEntities = this.state.entities.filter(e => removeIds.includes(e.body.id))
-    removedEntities.forEach((v) => {
-      Object.keys(entities).forEach(e => {
-        if(entities[e] && entities[e].body && entities[e].body.id == v.body.id) {
+    });
+    removeIds.forEach((id) => {
+      let body = null;
+      Object.keys(entities).forEach((e) => {
+        if (entities[e] && entities[e].body && entities[e].body.id == id) {
+          body = entities[e].body;
           delete entities[e];
         }
       });
-      Matter.World.remove(world, v.body)
-    })
+      Matter.World.remove(world, body);
+    });
+    return entities;
+  };
 
-    this.setState({entities: this.state.entities.filter(e => !removeIds.includes(e.body.id))})
-    return entities
-  }
-
-  createCircle = (entities, { touches, screen }) => {
+  touchToMove = (entities, { touches, screen }) => {
     let world = entities["physics"].world;
-    let radius = Math.trunc(Math.max(screen.width, screen.height) * 0.075) * 0.5;
+    let mainBall = entities["mainBall"];
+    let radius =
+      Math.trunc(Math.max(screen.width, screen.height) * 0.075) * 0.5;
     touches
       .filter((t) => t.type === "press")
       .forEach((t) => {
-        let body = Matter.Bodies.circle(t.event.pageX, t.event.pageY, radius, {
-          frictionAir: 0.021,
-          restitution: 1.5,
-        });
-  
-        Matter.World.add(world, [body]);
-  
-        let newObject = {
-          body: body,
-          radius: radius,
-          color: boxIds % 2 == 0 ? "pink" : "#B8E986",
-          renderer: Circle,
-        };
-        this.state.entities.push(newObject)
-        entities[++boxIds] = newObject;
+        let x = 0.075;
+
+        if (t.event.pageX > width / 2) {
+          x = x;
+        } else {
+          x = -x;
+        }
+
+        Matter.Body.setVelocity(mainBall.body, { x: 0, y: 0 });
+
+        Matter.Body.applyForce(
+          mainBall.body,
+          { x: mainBall.body.position.x, y: mainBall.body.position.y },
+          { x: x, y: -0.1 }
+        );
+        // let body = Matter.Bodies.circle(t.event.pageX, t.event.pageY, radius, {
+        //   frictionAir: 0.0001,
+        //   restitution: 1,
+        // });
+
+        // Matter.World.add(world, [body]);
+
+        // let newObject = {
+        //   body: body,
+        //   radius: radius,
+        //   color: boxIds % 2 == 0 ? "pink" : "#B8E986",
+        //   renderer: Circle,
+        // };
+        // entities[++boxIds] = newObject;
       });
 
-    this.setState({count: Object.keys(entities).length - 2})
+    // this.setState({ count: Object.keys(entities).length - 2 });
 
     return entities;
   };
@@ -108,26 +201,14 @@ export default class App extends React.Component {
       <View style={styles.container}>
         <GameEngine
           style={styles.gameContainer}
-          systems={[Physics, this.createCircle, this.removeCircle]}
-          entities={{
-            physics: {
-              engine: engine,
-              world: world,
-            },
-            floor: {
-              body: floor,
-              size: [width, boxSize],
-              color: "green",
-              renderer: Box,
-            },
-          }}
+          systems={[Physics, this.touchToMove]}
+          entities={this.state.entities}
         >
           <StatusBar hidden={true} />
           <View style={styles.labelContainer}>
             <Text style={styles.labelText}>{this.state.count}</Text>
           </View>
         </GameEngine>
-        
       </View>
     );
   }
@@ -144,16 +225,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    display: 'flex',
-    justifyContent: 'center',
-    alignContent: 'center'
+    display: "flex",
+    justifyContent: "center",
+    alignContent: "center",
   },
   labelContainer: {
-    paddingTop: 40
+    paddingTop: 40,
   },
   labelText: {
-    color: 'black',
+    color: "black",
     fontSize: 48,
-    textAlign: 'center'
+    textAlign: "center",
   },
 });
