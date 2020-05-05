@@ -11,6 +11,7 @@ import Matter from "matter-js";
 import Box from "./src/Box";
 import Circle from "./src/Circle";
 import { GameEngine } from "react-native-game-engine";
+import { setProvidesAudioData } from "expo/build/AR";
 
 const { width, height } = Dimensions.get("screen");
 const boxSize = Math.trunc(Math.max(width, height) * 0.075);
@@ -89,13 +90,31 @@ export default class App extends React.Component {
         renderer: Box,
       },
     },
+    running: true
   };
 
   constructor(props) {
     super(props);
+    this.gameEngine = null;
+    this.setup = this.setup.bind(this);
+    this.setup()
+  }
+
+  setup = () => {
     this.initiateBall = this.initiateBall.bind(this);
     const mainBall = this.initiateBall();
     this.state.entities["mainBall"] = mainBall;
+
+    Matter.Events.on(engine, "collisionStart", (event) => {
+      let pairs = event.pairs;
+
+      pairs.forEach(pair => {
+        console.log(pair)
+        if (pair.bodyA === obstacle || pair.bodyB === obstacle) {
+          this.gameEngine.dispatch({type: "game-over"})
+        }
+      })
+    })
   }
 
   initiateBall = () => {
@@ -152,7 +171,7 @@ export default class App extends React.Component {
     return entities;
   };
 
-  touchToMove = (entities, { touches, screen }) => {
+  touchToMove = (entities, { touches, screen, time }) => {
     let world = entities["physics"].world;
     let mainBall = entities["mainBall"];
     let radius =
@@ -161,7 +180,7 @@ export default class App extends React.Component {
       .filter((t) => t.type === "press")
       .forEach((t) => {
         let x = 0.075;
-
+        
         if (t.event.pageX > width / 2) {
           x = x;
         } else {
@@ -172,7 +191,7 @@ export default class App extends React.Component {
 
         Matter.Body.applyForce(
           mainBall.body,
-          { x: mainBall.body.position.x, y: mainBall.body.position.y },
+          mainBall.body.position,
           { x: x, y: -0.1 }
         );
         // let body = Matter.Bodies.circle(t.event.pageX, t.event.pageY, radius, {
@@ -191,18 +210,32 @@ export default class App extends React.Component {
         // entities[++boxIds] = newObject;
       });
 
+    const body = entities["obstacle"].body;
+    // Matter.Body.setVelocity(body, { x: 0, y: 0.01 });
+    Matter.Body.setPosition(body, { x: body.position.x, y: body.position.y + 1 });
     // this.setState({ count: Object.keys(entities).length - 2 });
 
     return entities;
   };
 
+  onEvent = (e) => {
+    if(e.type == 'game-over') {
+      this.setState({
+        running: false
+      })
+    }
+  }
+
   render() {
     return (
       <View style={styles.container}>
         <GameEngine
+          ref={(ref) => { this.gameEngine = ref; }}
           style={styles.gameContainer}
           systems={[Physics, this.touchToMove]}
           entities={this.state.entities}
+          running={this.state.running}
+          onEvent={this.onEvent}
         >
           <StatusBar hidden={true} />
           <View style={styles.labelContainer}>
