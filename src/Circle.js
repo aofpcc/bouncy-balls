@@ -11,14 +11,15 @@ export default class Circle extends Component {
     return (
       <View
         style={{
-            position: "absolute",
-            left: x,
-            top: y,
-            width: radius * 2,
-            height: radius * 2,
-            borderRadius: '100%',
-            backgroundColor: this.props.color || "pink"
-          }}/>
+          position: "absolute",
+          left: x,
+          top: y,
+          width: radius * 2,
+          height: radius * 2,
+          borderRadius: '100%',
+          backgroundColor: this.props.color || "pink"
+        }}
+      />
     );
   }
 }

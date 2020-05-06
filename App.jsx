@@ -67,7 +67,7 @@ const obstacle = Matter.Bodies.rectangle(
     } 
   }
 );
-Matter.Body.setVelocity(obstacle, { x: 0, y: 10 });
+Matter.Body.setVelocity(obstacle, { x: 40, y: 10 });
 
 Matter.World.add(world, [floor, leftWall, rightWall, obstacle]);
 
@@ -109,7 +109,7 @@ export default class App extends React.Component {
         renderer: Box,
       },
     },
-    running: false
+    running: true,
   };
 
   constructor(props) {
@@ -195,6 +195,16 @@ export default class App extends React.Component {
 
   onPlayAgain = () => {
     this.setState({ running: true })
+    this.simulate();
+  }
+
+  simulate() {
+    Matter.World.clear(engine.world);
+    Matter.Engine.clear(engine);
+    this.setup();
+    // ... re-create all my physical objects ...
+    // bind a callback function to invoke my ai stuff on every frame
+    // Events.on(gameEngine, 'afterUpdate', function() { ... });
   }
 
   touchToMove = (entities, { touches, screen, time }) => {
@@ -205,21 +215,21 @@ export default class App extends React.Component {
     touches
       .filter((t) => t.type === "press")
       .forEach((t) => {
-        // let x = 0.075;
+        let x = 0.075;
         
-        // if (t.event.pageX > width / 2) {
-        //   x = x;
-        // } else {
-        //   x = -x;
-        // }
+        if (t.event.pageX > width / 2) {
+          x = x;
+        } else {
+          x = -x;
+        }
 
-        // Matter.Body.setVelocity(mainBall.body, { x: 0, y: 0 });
+        Matter.Body.setVelocity(mainBall.body, { x: 0, y: 0 });
 
-        // Matter.Body.applyForce(
-        //   mainBall.body,
-        //   mainBall.body.position,
-        //   { x: x, y: -0.1 }
-        // );
+        Matter.Body.applyForce(
+          mainBall.body,
+          mainBall.body.position,
+          { x: x, y: -0.1 }
+        );
         let body = Matter.Bodies.circle(t.event.pageX, t.event.pageY, radius, {
           frictionAir: 0.0001,
           restitution: 0,
@@ -230,17 +240,17 @@ export default class App extends React.Component {
 
         Matter.World.add(world, [body]);
 
-        let newObject = {
-          body: body,
-          radius: radius,
-          color: boxIds % 2 == 0 ? "pink" : "#B8E986",
-          renderer: Circle,
-        };
-        entities[++boxIds] = newObject;
+        // let newObject = {
+        //   body: body,
+        //   radius: radius,
+        //   color: boxIds % 2 == 0 ? "pink" : "#B8E986",
+        //   renderer: Circle,
+        // };
+        // entities[++boxIds] = newObject;
       });
 
     const body = entities["obstacle"].body;
-    // Matter.Body.setPosition(body, { x: body.position.x, y: body.position.y + 1 });
+    Matter.Body.setPosition(body, { x: body.position.x, y: body.position.y + 1 });
 
     return entities;
   };
