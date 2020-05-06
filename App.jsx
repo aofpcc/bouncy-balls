@@ -19,16 +19,28 @@ const boxSize = Math.trunc(Math.max(width, height) * 0.075);
 const radius = Math.trunc(Math.max(width, height) * 0.075) * 0.5;
 const engine = Matter.Engine.create({ enableSleeping: true });
 const world = engine.world;
+
+const defaultCategory = 0x0001;
+const frameCategory = 0x0002;
+const playerCategory = 0x0004;
+const aiCategory = 0x0008;
+
 const floor = Matter.Bodies.rectangle(
   width / 2,
   height - boxSize,
   width,
   boxSize,
-  { isStatic: true }
+  { isStatic: true,
+  collisionFilter: {
+    category: frameCategory
+  }  }
 );
 const wallWidth = 10;
 const leftWall = Matter.Bodies.rectangle(0, height / 2, wallWidth, height, {
   isStatic: true,
+  collisionFilter: {
+    category: frameCategory
+  } 
 });
 
 const rightWall = Matter.Bodies.rectangle(
@@ -36,7 +48,10 @@ const rightWall = Matter.Bodies.rectangle(
   height / 2,
   wallWidth,
   height,
-  { isStatic: true }
+  { isStatic: true,
+  collisionFilter: {
+    category: frameCategory
+  } }
 );
 
 const obstacleHeight = 30;
@@ -46,7 +61,10 @@ const obstacle = Matter.Bodies.rectangle(
   width/ 2,
   obstacleHeight,
   {
-    isStatic: true
+    isStatic: true,
+    collisionFilter: {
+      category: frameCategory
+    } 
   }
 );
 Matter.Body.setVelocity(obstacle, { x: 0, y: 10 });
@@ -110,7 +128,7 @@ export default class App extends React.Component {
       let pairs = event.pairs;
 
       pairs.forEach(pair => {
-        console.log(pair)
+        // console.log(pair)
         if (pair.bodyA === obstacle || pair.bodyB === obstacle) {
           this.gameEngine.dispatch({type: "game-over"})
         }
@@ -124,7 +142,10 @@ export default class App extends React.Component {
     let radius = Math.trunc(Math.max(width, height) * 0.075) * 0.5;
     let body = Matter.Bodies.circle(width / 2, height - 3 * boxSize, radius, {
       frictionAir: 0.0001,
-      restitution: 1,
+      restitution: 0,
+      collisionFilter: {
+        mask: frameCategory
+      }
     });
 
     Matter.World.add(world, [body]);
@@ -184,41 +205,42 @@ export default class App extends React.Component {
     touches
       .filter((t) => t.type === "press")
       .forEach((t) => {
-        let x = 0.075;
+        // let x = 0.075;
         
-        if (t.event.pageX > width / 2) {
-          x = x;
-        } else {
-          x = -x;
-        }
+        // if (t.event.pageX > width / 2) {
+        //   x = x;
+        // } else {
+        //   x = -x;
+        // }
 
-        Matter.Body.setVelocity(mainBall.body, { x: 0, y: 0 });
+        // Matter.Body.setVelocity(mainBall.body, { x: 0, y: 0 });
 
-        Matter.Body.applyForce(
-          mainBall.body,
-          mainBall.body.position,
-          { x: x, y: -0.1 }
-        );
-        // let body = Matter.Bodies.circle(t.event.pageX, t.event.pageY, radius, {
-        //   frictionAir: 0.0001,
-        //   restitution: 1,
-        // });
+        // Matter.Body.applyForce(
+        //   mainBall.body,
+        //   mainBall.body.position,
+        //   { x: x, y: -0.1 }
+        // );
+        let body = Matter.Bodies.circle(t.event.pageX, t.event.pageY, radius, {
+          frictionAir: 0.0001,
+          restitution: 0,
+          collisionFilter: {
+            mask: frameCategory
+          } 
+        });
 
-        // Matter.World.add(world, [body]);
+        Matter.World.add(world, [body]);
 
-        // let newObject = {
-        //   body: body,
-        //   radius: radius,
-        //   color: boxIds % 2 == 0 ? "pink" : "#B8E986",
-        //   renderer: Circle,
-        // };
-        // entities[++boxIds] = newObject;
+        let newObject = {
+          body: body,
+          radius: radius,
+          color: boxIds % 2 == 0 ? "pink" : "#B8E986",
+          renderer: Circle,
+        };
+        entities[++boxIds] = newObject;
       });
 
     const body = entities["obstacle"].body;
-    // Matter.Body.setVelocity(body, { x: 0, y: 0.01 });
-    Matter.Body.setPosition(body, { x: body.position.x, y: body.position.y + 1 });
-    // this.setState({ count: Object.keys(entities).length - 2 });
+    // Matter.Body.setPosition(body, { x: body.position.x, y: body.position.y + 1 });
 
     return entities;
   };
