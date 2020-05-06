@@ -6,6 +6,7 @@ import {
   View,
   Text,
   TouchableOpacity,
+  Button
 } from "react-native";
 import Matter from "matter-js";
 import Box from "./src/Box";
@@ -90,7 +91,7 @@ export default class App extends React.Component {
         renderer: Box,
       },
     },
-    running: true
+    running: false
   };
 
   constructor(props) {
@@ -171,6 +172,10 @@ export default class App extends React.Component {
     return entities;
   };
 
+  onPlayAgain = () => {
+    this.setState({ running: true })
+  }
+
   touchToMove = (entities, { touches, screen, time }) => {
     let world = entities["physics"].world;
     let mainBall = entities["mainBall"];
@@ -241,6 +246,14 @@ export default class App extends React.Component {
           <View style={styles.labelContainer}>
             <Text style={styles.labelText}>{this.state.count}</Text>
           </View>
+          {
+            !this.state.running &&
+            <View style={styles.overlay}>
+              <Button style={styles.playAgainButton} onPress={this.onPlayAgain}
+              title="Play Again" color="white">
+              </Button>
+            </View>
+          }
         </GameEngine>
       </View>
     );
@@ -264,6 +277,19 @@ const styles = StyleSheet.create({
   },
   labelContainer: {
     paddingTop: 40,
+  },
+  playAgainButton: {
+    flex: 1,
+  },
+  overlay: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: '100%',
+    height: '100%',
+    backgroundColor: 'black',
+    display: 'flex',
+    justifyContent: 'center'
   },
   labelText: {
     color: "black",
