@@ -68,8 +68,23 @@ const obstacle = Matter.Bodies.rectangle(
   }
 );
 Matter.Body.setVelocity(obstacle, { x: 40, y: 10 });
-
 Matter.World.add(world, [floor, leftWall, rightWall, obstacle]);
+
+const obstacler = Matter.Bodies.rectangle(
+  width/2,
+  0,
+  width/ 2,
+  60,
+  {
+    isStatic: true,
+    collisionFilter: {
+      category: frameCategory
+    } 
+  }
+);
+Matter.Body.setVelocity(obstacler, { x: 40, y: 50 });
+Matter.World.add(world, [floor, leftWall, rightWall, obstacler]);
+
 
 const Physics = (entities, { time }) => {
   let engine = entities["physics"].engine;
@@ -95,6 +110,11 @@ export default class App extends React.Component {
       },
       obstacle: {
         body: obstacle,
+        size: [width/2, obstacleHeight],
+        renderer: Box,
+      },
+      obstacler: {
+        body: obstacler,
         size: [width/2, obstacleHeight],
         renderer: Box,
       },
@@ -200,7 +220,9 @@ export default class App extends React.Component {
 
   simulate() {
     Matter.World.clear(engine.world);
-    Matter.Engine.clear(engine);
+    // Matter.Engine.clear(engine);
+    this.gameEngine = null;
+    this.setup = this.setup.bind(this);
     this.setup();
     // ... re-create all my physical objects ...
     // bind a callback function to invoke my ai stuff on every frame
@@ -249,8 +271,13 @@ export default class App extends React.Component {
         // entities[++boxIds] = newObject;
       });
 
+    entities["obstacle"].body.position.x = width/3*2+30;
     const body = entities["obstacle"].body;
     Matter.Body.setPosition(body, { x: body.position.x, y: body.position.y + 1 });
+
+    entities["obstacler"].body.position.x = 5;
+    const bodies = entities["obstacler"].body;
+    Matter.Body.setPosition(bodies, { x: bodies.position.x, y: bodies.position.y + 5 });
 
     return entities;
   };
