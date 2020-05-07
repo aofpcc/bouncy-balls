@@ -55,35 +55,44 @@ const rightWall = Matter.Bodies.rectangle(
 );
 
 const obstacleHeight = 30;
-const obstacle = Matter.Bodies.rectangle(
-  width/2,
-  0,
-  width/ 2,
-  obstacleHeight,
-  {
-    isStatic: true,
-    collisionFilter: {
-      category: frameCategory
-    } 
-  }
-);
-Matter.Body.setVelocity(obstacle, { x: 40, y: 10 });
-Matter.World.add(world, [floor, leftWall, rightWall, obstacle]);
 
-const obstacler = Matter.Bodies.rectangle(
-  width/2,
-  0,
-  width/ 2,
-  60,
+const obstacles = []
+
+obstacles.push(
   {
-    isStatic: true,
-    collisionFilter: {
-      category: frameCategory
-    } 
+    body: Matter.Bodies.rectangle(
+      width/2 + width / 4,
+      0,
+      width/ 2,
+      obstacleHeight,
+      {
+        isStatic: true,
+        collisionFilter: {
+          category: frameCategory
+        } 
+      }
+    ),
+    speed: 3
   }
 );
-Matter.Body.setVelocity(obstacler, { x: 40, y: 50 });
-Matter.World.add(world, [floor, leftWall, rightWall, obstacler]);
+obstacles.push(
+  {
+    body: Matter.Bodies.rectangle(
+      width/2 - width/4,
+      50,
+      width/ 2,
+      obstacleHeight,
+      {
+        isStatic: true,
+        collisionFilter: {
+          category: frameCategory
+        } 
+      }
+    ),
+    speed: 1
+  }
+);
+Matter.World.add(world, [floor, leftWall, rightWall, ...obstacles]);
 
 
 const Physics = (entities, { time }) => {
@@ -108,13 +117,13 @@ export default class App extends React.Component {
         color: "green",
         renderer: Box,
       },
-      obstacle: {
-        body: obstacle,
+      obstacle1: {
+        body: obstacles[0].body,
         size: [width/2, obstacleHeight],
         renderer: Box,
       },
-      obstacler: {
-        body: obstacler,
+      obstacle2: {
+        body: obstacles[1].body,
         size: [width/2, obstacleHeight],
         renderer: Box,
       },
@@ -149,7 +158,7 @@ export default class App extends React.Component {
 
       pairs.forEach(pair => {
         // console.log(pair)
-        if (pair.bodyA === obstacle || pair.bodyB === obstacle) {
+        if (obstacles.filter(o => o.body == pair.bodyA || o.body == pair.bodyB).length > 0) {
           this.gameEngine.dispatch({type: "game-over"})
         }
       })
@@ -271,13 +280,17 @@ export default class App extends React.Component {
         // entities[++boxIds] = newObject;
       });
 
-    entities["obstacle"].body.position.x = width/3*2+30;
-    const body = entities["obstacle"].body;
-    Matter.Body.setPosition(body, { x: body.position.x, y: body.position.y + 1 });
+    // entities["obstacle"].body.position.x = width/3*2+30;
+    // const body = entities["obstacle"].body;
+    // Matter.Body.setPosition(body, { x: body.position.x, y: body.position.y + 1 });
 
-    entities["obstacler"].body.position.x = 5;
-    const bodies = entities["obstacler"].body;
-    Matter.Body.setPosition(bodies, { x: bodies.position.x, y: bodies.position.y + 5 });
+    // entities["obstacler"].body.position.x = 5;
+    // const bodies = entities["obstacler"].body;
+    // Matter.Body.setPosition(bodies, { x: bodies.position.x, y: bodies.position.y + 5 });
+
+    obstacles.forEach(o => {
+      Matter.Body.setPosition( o.body, { x: o.body.position.x, y: o.body.position.y + o.speed });
+    })
 
     return entities;
   };
